@@ -4,6 +4,7 @@ import com.templates.valens.v1.security.User.UserSecurityDetails;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import java.util.Calendar;
 import java.util.Date;
@@ -11,10 +12,13 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
 
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 @Component
 public class JwtUtils {
 
+    @Autowired
+    private static BCryptPasswordEncoder passwordEncoder;
     @Value("${jwt.secret}")
     private String jwtSecretKey;
     private static final String CLAIM_KEY_USER_ID = "userId";
@@ -77,6 +81,11 @@ public class JwtUtils {
         return new JwtUserInfo().setEmail(email)
                 .setRole(role)
                 .setUserId(userId);
+    }
+
+
+    public static String hashPassword(String password){
+        return passwordEncoder.encode(password);
     }
 
     public Boolean isTokenValid(String token , UserSecurityDetails userSecurityDetails){
