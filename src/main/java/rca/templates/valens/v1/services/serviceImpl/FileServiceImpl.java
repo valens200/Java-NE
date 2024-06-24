@@ -4,6 +4,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import rca.templates.valens.v1.services.IFileService;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -11,9 +13,9 @@ import java.nio.file.Paths;
 import java.util.Objects;
 import java.util.UUID;
 
-@Service()
+@Service
 @Transactional(rollbackFor = Exception.class)
-public class FileServiceImpl {
+public class FileServiceImpl implements IFileService {
 
     @Value("${upload.dir.prod")
     private String uploadDir;

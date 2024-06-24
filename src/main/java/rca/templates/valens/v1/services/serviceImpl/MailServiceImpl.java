@@ -1,4 +1,6 @@
 package rca.templates.valens.v1.services.serviceImpl;
+import org.springframework.context.annotation.Bean;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 import rca.templates.valens.v1.exceptions.BadRequestException;
 import rca.templates.valens.v1.models.User;
 import rca.templates.valens.v1.utils.Mail;
@@ -23,7 +25,8 @@ import java.nio.charset.StandardCharsets;
 public class MailServiceImpl extends ServiceImpl {
 
 
-    private final JavaMailSender mailSender;
+
+//    private final JavaMailSender mailSender;
 
     private final SpringTemplateEngine templateEngine;
     @Value("${spring.mail.username}")
@@ -41,11 +44,11 @@ public class MailServiceImpl extends ServiceImpl {
     @Value("${admin.email}")
     private String adminEmail;
 
-    @Autowired
-    public MailServiceImpl(SpringTemplateEngine templateEngine, JavaMailSender mailSender) {
-        this.mailSender = mailSender;
-        this.templateEngine = templateEngine;
+    @Bean
+    private JavaMailSender mailSender(){
+        return new JavaMailSenderImpl();
     }
+
     public void sendResetPasswordMail(User user) {
         Mail mail = new Mail(
                 appName,
@@ -128,7 +131,7 @@ public class MailServiceImpl extends ServiceImpl {
     @Async
     public void sendMail(Mail mail) {
         try {
-            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessage message = mailSender().createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED, StandardCharsets.UTF_8.name());
 
             Context context = new Context();
@@ -149,7 +152,7 @@ public class MailServiceImpl extends ServiceImpl {
                 helper.addAttachment(mail.getFile().getName(), mail.getFile());
             }
 
-            mailSender.send(message);
+            mailSender().send(message);
 
 
         } catch (MessagingException exception) {

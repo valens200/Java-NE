@@ -36,10 +36,10 @@ public class AuthenticationServiceImpl extends ServiceImpl implements Authentica
     private final IUserRepository userRepository;
     private  final JwtUtils jwtUtils;
     private UserSecurityDetailsService securityDetailsService;
-    private MailServiceImpl mailService;
-    private IUserService userService;
+    private final MailServiceImpl mailService;
+    private final IUserService userService;
 
-    private IFileService fileService;
+    private final IFileService fileService;
 
     @Autowired
     public AuthenticationServiceImpl(IUserRepository userRepository, UserSecurityDetailsService userSecurityDetailsService, JwtUtils jwtUtils, MailServiceImpl mailService, IUserService userService, IFileService fileService) {

@@ -1,10 +1,8 @@
 package rca.templates.valens.v1.services;
-import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.IOException;
 
-@Component
 public interface IFileService {
 
     /**
