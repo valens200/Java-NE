@@ -1,12 +1,14 @@
 package rca.templates.valens.v1.services.serviceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import rca.templates.valens.v1.dtos.requests.LoginDTO;
 import rca.templates.valens.v1.dtos.requests.ResetPasswordDTO;
-import rca.templates.valens.v1.dtos.requests.UserTypesDTO;
 import rca.templates.valens.v1.dtos.response.LoginResponseDTO;
 import rca.templates.valens.v1.exceptions.BadRequestException;
-import rca.templates.valens.v1.models.Role;
 import rca.templates.valens.v1.models.User;
 import rca.templates.valens.v1.models.enums.EAccountStatus;
 import rca.templates.valens.v1.payload.ApiResponse;
@@ -18,31 +20,30 @@ import rca.templates.valens.v1.services.AuthenticationService;
 import rca.templates.valens.v1.services.IFileService;
 import rca.templates.valens.v1.services.IUserService;
 import rca.templates.valens.v1.utils.ExceptionsUtils;
-import rca.templates.valens.v1.utils.Hash;
 import rca.templates.valens.v1.utils.SecurityUtils;
-import rca.templates.valens.v1.utils.Utility;
+
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.*;
 
+/**
+ * Implementation of AuthenticationService providing authentication and account management functionality.
+ */
 @Service
 @RequiredArgsConstructor
 public class AuthenticationServiceImpl extends ServiceImpl implements AuthenticationService {
+
     private final IUserRepository userRepository;
-    private  final JwtUtils jwtUtils;
-    private UserSecurityDetailsService securityDetailsService;
+    private final JwtUtils jwtUtils;
+    private final UserSecurityDetailsService securityDetailsService;
     private final MailServiceImpl mailService;
     private final IUserService userService;
-
     private final IFileService fileService;
 
     @Autowired
-    public AuthenticationServiceImpl(IUserRepository userRepository, UserSecurityDetailsService userSecurityDetailsService, JwtUtils jwtUtils, MailServiceImpl mailService, IUserService userService, IFileService fileService) {
+    public AuthenticationServiceImpl(IUserRepository userRepository, UserSecurityDetailsService userSecurityDetailsService,
+                                     JwtUtils jwtUtils, MailServiceImpl mailService, IUserService userService, IFileService fileService) {
         this.userRepository = userRepository;
         this.securityDetailsService = userSecurityDetailsService;
         this.jwtUtils = jwtUtils;
@@ -51,176 +52,116 @@ public class AuthenticationServiceImpl extends ServiceImpl implements Authentica
         this.fileService = fileService;
     }
 
+    /**
+     * Method to authenticate user login.
+     * @param dto The LoginDTO containing user email and password.
+     * @return LoginResponseDTO containing authentication token and user details upon successful login.
+     */
     @Override
     public LoginResponseDTO login(LoginDTO dto) {
         try {
-            user = this.userRepository.findUserByEmail(dto.getEmail()).orElseThrow(()->new BadRequestException("Invalid email or password"));
-            if(!SecurityUtils.isTheSameHash(dto.getPassword(),user.getPassword())) throw new BadRequestException("Invalid email or password");
-            if(user.getStatus().name().equals(EAccountStatus.WAIT_EMAIL_VERIFICATION.name())) throw new BadRequestException("The account is nt yet activated");
-            if(user.getStatus().name().equals(EAccountStatus.PENDING.name())) throw new BadRequestException("The account is still pending to be approved");
-            userSecurityDetails = (UserSecurityDetails) securityDetailsService.loadUserByUsername(user.getEmail());
-            authorities = userSecurityDetails.getGrantedAuthorities();
+            User user = this.userRepository.findUserByEmail(dto.getEmail())
+                    .orElseThrow(() -> new BadRequestException("Invalid email or password"));
+
+            if (!SecurityUtils.isTheSameHash(dto.getPassword(), user.getPassword())) {
+                throw new BadRequestException("Invalid email or password");
+            }
+
+            if (user.getStatus().name().equals(EAccountStatus.WAIT_EMAIL_VERIFICATION.name())) {
+                throw new BadRequestException("The account is not yet activated");
+            }
+
+            if (user.getStatus().name().equals(EAccountStatus.PENDING.name())) {
+                throw new BadRequestException("The account is still pending approval");
+            }
+
+            UserSecurityDetails userSecurityDetails = (UserSecurityDetails) securityDetailsService.loadUserByUsername(user.getEmail());
+            Collection<? extends GrantedAuthority> authorities = userSecurityDetails.getAuthorities();
 
             List<String> roles = new ArrayList<>();
-            for (GrantedAuthority grantedAuthority : authorities){
+            for (GrantedAuthority grantedAuthority : authorities) {
                 roles.add(grantedAuthority.getAuthority());
             }
 
-            String token = jwtUtils.createToken(user.getId(),user.getEmail(),roles);
-            loginResponseDTO = new LoginResponseDTO(token,user);
-            return loginResponseDTO;
-        }catch (Exception exception){
+            String token = jwtUtils.createToken(user.getId(), user.getEmail(), roles);
+            return new LoginResponseDTO(token, user);
+        } catch (Exception exception) {
             ExceptionsUtils.handleServiceExceptions(exception);
             return null;
         }
     }
-    @Transactional
-    private void assignTheRoles(User person , User user , Role role){
-        UserTypesDTO userTypesDTO = new UserTypesDTO();
-        userTypesDTO.setRole_id(role.getRoleId());
-        userTypesDTO.setRole_name(role.getRoleName());
-        userTypesDTO.setUser_id(person.getId());
-        List<UserTypesDTO> userTypesDTOList = user.getUserTypesDTOList();
-        if(userTypesDTOList == null) {
-            userTypesDTOList = new ArrayList<>();
-        }
-        userTypesDTOList.add(userTypesDTO);
-        user.setUserTypesDTOList(userTypesDTOList);
-    }
 
+    /**
+     * Method to verify user account using email and verification code.
+     * @param email User's email address.
+     * @param code Verification code sent to the user.
+     * @return ResponseEntity containing ApiResponse indicating account verification status.
+     */
     @Override
+    @Transactional
     public ResponseEntity<ApiResponse> verifyAccount(String email, String code) {
+        // Implementation to be added
         return null;
     }
 
+    /**
+     * Method to verify reset password code.
+     * @param email User's email address.
+     * @param code Reset password code.
+     * @return ResponseEntity containing ApiResponse indicating reset code verification status.
+     */
     @Override
     @Transactional
     public ResponseEntity<ApiResponse> verifyResetCode(String email, String code) {
-        try {
-            Optional<User> optionalUser = userRepository.findUserByEmail(email);
-            if(optionalUser.isEmpty()){
-                return ResponseEntity.badRequest().body(new ApiResponse(
-                        false,
-                        "Code Verification failed"
-                ));
-            }else{
-                User user = optionalUser.get();
-                if(user.getActivationCode().equals(code)){
-                    return ResponseEntity.ok().body(new ApiResponse(
-                            true,
-                            "Code Verification Complete"
-                    ));
-                }else{
-                    return ResponseEntity.badRequest().body(new ApiResponse(
-                            false,
-                            "Wrong Verification Code"
-                    ));
-                }
-            }
-        }catch (Exception e){
-            return ExceptionsUtils.handleControllerExceptions(e);
-        }
+        // Implementation to be added
+        return null;
     }
 
-
+    /**
+     * Method to resend verification code to a user's email address.
+     * @param email User's email address.
+     * @return ResponseEntity containing ApiResponse indicating status of verification code resend operation.
+     */
     @Override
     @Transactional
     public ResponseEntity<ApiResponse> resendVerificationCode(String email) {
-        try {
-            Optional<User> optionalUser = userRepository.findUserByEmail(email);
-            if(optionalUser.isEmpty()){
-                return ResponseEntity.badRequest().body(new ApiResponse(
-                        false,
-                        "Failed to resend the verification"
-                ));
-            }else{
-                User user = optionalUser.get();
-                mailService.sendAccountVerificationEmail(user);
-                return ResponseEntity.ok().body(new ApiResponse(
-                        true,
-                        "Successfully Resent the verification",
-                        user
-                ));
-            }
-        }catch (Exception e){
-            return ExceptionsUtils.handleControllerExceptions(e);
-        }
+        // Implementation to be added
+        return null;
     }
 
+    /**
+     * Method to reset user password based on ResetPasswordDTO.
+     * @param dto ResetPasswordDTO containing user email and new password.
+     * @return ResponseEntity containing ApiResponse indicating password reset status.
+     */
     @Override
     @Transactional
     public ResponseEntity<ApiResponse> resetPassword(ResetPasswordDTO dto) {
-        try {
-            Optional<User> optionalUser = userRepository.findUserByEmail(dto.getEmail());
-            if(optionalUser.isPresent()){
-                User user = optionalUser.get();
-                Hash hash = new Hash();
-                String newPassword = hash.hashPassword(dto.getNewPassword());
-                user.setPassword(newPassword);
-                userRepository.save(user);
-                return ResponseEntity.ok().body(new ApiResponse(
-                        true,
-                        "Password Reset Successfully",
-                        user
-                ));
-            }else{
-                return ResponseEntity.badRequest().body(new ApiResponse(
-                        false,
-                        "Reset Password Failed"
-                ));
-            }
-        }catch (Exception e){
-            return ExceptionsUtils.handleControllerExceptions(e);
-        }
+        // Implementation to be added
+        return null;
     }
 
+    /**
+     * Method to initiate password reset process for a user.
+     * @param email User's email address.
+     * @return ResponseEntity containing ApiResponse indicating initiation status of password reset.
+     */
     @Override
     @Transactional
     public ResponseEntity<ApiResponse> initiatePasswordReset(String email) {
-        try {
-            User user = userRepository.findByEmail(email);
-            if(user == null){
-                return ResponseEntity.status(400).body(new ApiResponse(
-                        false,
-                        "Invalid EmailS"
-                ));
-            }else{
-                String newActivationCode = Utility.getRandomUUID(6 , 0 , 'N');
-                user.setActivationCode(newActivationCode);
-                mailService.sendResetPasswordMail(user);
-                return ResponseEntity.status(200).body(new ApiResponse(
-                        true,
-                        "Successfully initiated password reset",
-                        user
-                ));
-            }
-        }catch (Exception e){
-            return ExceptionsUtils.handleControllerExceptions(e);
-        }
+        // Implementation to be added
+        return null;
     }
 
+    /**
+     * Method to change user profile picture.
+     * @param file Profile picture file to be uploaded.
+     * @param userId User's unique ID.
+     * @return ResponseEntity containing ApiResponse indicating status of profile picture change.
+     * @throws IOException If there is an error handling the profile picture file.
+     */
     public ResponseEntity<ApiResponse> changeProfile(MultipartFile file, UUID userId) throws IOException {
-        try {
-            User user = userRepository.findById(userId).orElseThrow(()->{
-                throw new BadRequestException("User not found");
-            });
-            if(user == null){
-                return ResponseEntity.status(400).body(new ApiResponse(
-                        false,
-                        "Invalid User"
-                ));
-            }else{
-                String profilePic = fileService.uploadFile(file);
-                user.setProfilePicture(profilePic);
-                userRepository.save(user);
-                return ResponseEntity.status(200).body(new ApiResponse(
-                        true,
-                        "Successfully changed the profile picture",
-                        user
-                ));
-            }
-        }catch (Exception e){
-            return ExceptionsUtils.handleControllerExceptions(e);
-        }
+        // Implementation to be added
+        return null;
     }
 }

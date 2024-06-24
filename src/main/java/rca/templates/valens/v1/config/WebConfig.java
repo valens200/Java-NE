@@ -7,12 +7,18 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
+
+    // Configure CORS mappings
     @Override
     public void addCorsMappings(CorsRegistry corsRegistry){
         corsRegistry.addMapping("/**").allowedOrigins("*");
     }
+
+    // Configure resource handlers for serving static resources
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry handlerRegistry){
-        handlerRegistry.addResourceHandler("/**").addResourceLocations("classpath:/static/").addResourceLocations("classpath:/static");
+        handlerRegistry.addResourceHandler("/**")
+                .addResourceLocations("classpath:/static/") // Location of static resources in the classpath
+                .addResourceLocations("classpath:/static"); // Additional location for static resources
     }
 }
