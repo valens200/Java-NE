@@ -76,13 +76,13 @@ public class AuthenticationServiceImpl extends ServiceImpl implements Authentica
             }
 
             UserSecurityDetails userSecurityDetails = (UserSecurityDetails) securityDetailsService.loadUserByUsername(user.getEmail());
-            Collection<? extends GrantedAuthority> authorities = userSecurityDetails.getAuthorities();
+            System.out.println(userSecurityDetails.toString());
+            Collection<? extends GrantedAuthority> authorities = userSecurityDetails.getGrantedAuthorities();
 
             List<String> roles = new ArrayList<>();
             for (GrantedAuthority grantedAuthority : authorities) {
                 roles.add(grantedAuthority.getAuthority());
             }
-
             String token = jwtUtils.createToken(user.getId(), user.getEmail(), roles);
             return new LoginResponseDTO(token, user);
         } catch (Exception exception) {

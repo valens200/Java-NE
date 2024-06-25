@@ -9,6 +9,7 @@ import rca.templates.valens.v1.dtos.requests.LoginDTO;
 import rca.templates.valens.v1.dtos.requests.ResetPasswordDTO;
 import rca.templates.valens.v1.payload.ApiResponse;
 import rca.templates.valens.v1.services.AuthenticationService;
+import rca.templates.valens.v1.utils.ExceptionsUtils;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -36,8 +37,12 @@ public class AuthenticationController {
      */
     @PostMapping("/login")
     public ResponseEntity<ApiResponse> login(@RequestBody() LoginDTO dto){
-        log.info("Request for logging in with email : {} and password : {}", dto.getEmail(),dto.getPassword());
-        return ResponseEntity.ok(new ApiResponse(true, "User logged in successfully", authenticationService.login(dto)));
+        try{
+            log.info("Request for logging in with email : {} and password : {}", dto.getEmail(),dto.getPassword());
+            return ResponseEntity.ok(new ApiResponse(true, "User logged in successfully", authenticationService.login(dto)));
+        }catch (Exception exception){
+            return ExceptionsUtils.handleControllerExceptions(exception);
+        }
     }
 
     /**

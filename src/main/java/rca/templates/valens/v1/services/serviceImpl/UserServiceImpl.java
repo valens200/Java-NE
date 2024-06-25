@@ -8,6 +8,7 @@ import rca.templates.valens.v1.dtos.requests.CreateUserDTO;
 import rca.templates.valens.v1.exceptions.BadRequestException;
 import rca.templates.valens.v1.exceptions.NotFoundException;
 import rca.templates.valens.v1.exceptions.UnauthorizedException;
+import rca.templates.valens.v1.models.Role;
 import rca.templates.valens.v1.models.User;
 import rca.templates.valens.v1.repositories.IUserRepository;
 import rca.templates.valens.v1.security.User.UserSecurityDetails;
