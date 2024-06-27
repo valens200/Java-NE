@@ -1,0 +1,18 @@
+CREATE OR REPLACE FUNCTION save_message()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.banking_type = 'SAVING' THEN
+	INSERT INTO messages(id,message,account_id) VALUES(NEW.id,'Saving was successful',NEW.account_id);
+	ELSEIF NEW.banking_type = 'WITHDRAWAL' THEN
+	     INSERT INTO messages(id,message,account_id) VALUES(NEW.id,'Withdrawal was successful',NEW.account_id);
+    ELSEIF  NEW.banking_type = 'TRANSFER' THEN
+		 INSERT INTO messages(id,message,account_id) VALUES(NEW.id,'Transfer was successful',NEW.account_id);
+	END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER save_message
+BEFORE INSERT ON transactions
+FOR EACH ROW
+EXECUTE FUNCTION save_message();

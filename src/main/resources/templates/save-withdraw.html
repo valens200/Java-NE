@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="ISO-8859-1">
+    <title>Log Report</title>
+</head>
+<body>
+<h1 th:text="${app_name}"></h1>
+<p>Dear <span th:text="${name}"></span> , your <span th:text="${banking_type}"></span> of <span th:text="${amount}"></span>on your account has been completed successfully</p>
+<p>Stay enjoying our application.</p>
+<p>Regards,</p>
+<p th:text="${app_name}"></p>
+</body>
+</html>
